@@ -21,7 +21,7 @@ enum AD_INFO {
 	id = 0,
 	ad_types:type = TYPE_SAY,
 	Handle:timer = INVALID_HANDLE,
-	String:plugin[4],
+	plugin,
 	String:flagList[16],
 	Float:interval,
 	String:text[256],
@@ -77,35 +77,26 @@ public OnConfigsExecuted() {
 	g_fDefaultInterval = GetConVarFloat(g_hCvarInterval);
 }
 
-public Handler_DoNothing(Handle:menu, MenuAction:action, param1, param2) {}
-
-public OnPluginEnd() {
-	ClearTimers();
-}
-
 //native Ads_RegisterAd(Float:interval, ad_types:type, const String:flags[], const String:text[]);
 public Native_RegisterAd(Handle:hPlugin, iNumParams)
 {
-	new String:sKnob[4];
-	GetNativeString(1, sKnob, sizeof(sKnob)+1);
-
-	new Float:fInterval = GetNativeCell(2);
+	new Float:fInterval = GetNativeCell(1);
 
 	if(fInterval == 0.0) {
 		fInterval = g_fDefaultInterval;
 	}
 
 	new String:sFlags[16];
-	GetNativeString(4, sFlags, sizeof(sFlags)+1);
+	GetNativeString(3, sFlags, sizeof(sFlags)+1);
 
 	new String:sText[MSG_SIZE];
-	GetNativeString(5, sText, sizeof(sText)+1);
+	GetNativeString(4, sText, sizeof(sText)+1);
 
 	//Pack in one piece, create timer
 	g_hAds[g_iCount][id] = g_iCount;
 	g_hAds[g_iCount][interval] = fInterval;
-	g_hAds[g_iCount][type] = GetNativeCell(3);
-	strcopy(g_hAds[g_iCount][plugin], 4, sKnob);
+	g_hAds[g_iCount][plugin] = _:hPlugin;
+	g_hAds[g_iCount][type] = GetNativeCell(2);
 	strcopy(g_hAds[g_iCount][flagList], 16, sFlags);
 	strcopy(g_hAds[g_iCount][text], MSG_SIZE, sText);
 	if(fInterval > 0) {
@@ -117,12 +108,9 @@ public Native_RegisterAd(Handle:hPlugin, iNumParams)
 
 public Native_UnRegisterAds(Handle:hPlugin, iNumParams)
 {
-	new String:sKnob[4];
-	GetNativeString(1, sKnob, sizeof(sKnob)+1);
-
 	for(new i = 0; i < MAX_ADS; i++) {
-		if(StrEqual(g_hAds[i][plugin], sKnob) {
-			strcopy(g_hAds[g_iCount][text], MSG_SIZE, "");
+		if(g_hAds[i][plugin] == _:hPlugin) {
+			strcopy(g_hAds[i][text], MSG_SIZE, "");
 		}
 	}
 }
@@ -257,7 +245,6 @@ public Action:Timer_ShowAd(Handle:htimer, any:data_id) {
 
 		DisplayAd(data_id, sText);
 	}
-	//LogMessage("AD! %s", sText);
 }
 
 bool:HasFlag(iClient, String:sFlags[16]) {
@@ -279,4 +266,10 @@ bool:HasFlag(iClient, String:sFlags[16]) {
 	}
 
 	return false;
+}
+
+public Handler_DoNothing(Handle:menu, MenuAction:action, param1, param2) {}
+
+public OnPluginEnd() {
+	ClearTimers();
 }
