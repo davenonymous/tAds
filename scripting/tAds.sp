@@ -20,11 +20,12 @@ public Plugin:myinfo = {
 enum AD_INFO {
 	id = 0,
 	ad_types:type = TYPE_SAY,
-	Handle:timer = INVALID_HANDLE,
-	plugin,
-	String:flagList[16],
 	Float:interval,
+	plugin,
+	Handle:timer = INVALID_HANDLE,
+	String:flagList[16],
 	String:text[256],
+
 }
 
 new Handle:g_hCenterAd[MAXPLAYERS + 1];
@@ -96,13 +97,16 @@ public Native_RegisterAd(Handle:hPlugin, iNumParams)
 	g_hAds[g_iCount][id] = g_iCount;
 	g_hAds[g_iCount][interval] = fInterval;
 	g_hAds[g_iCount][plugin] = _:hPlugin;
+	LogMessage("Registered as: %i", g_hAds[g_iCount][type]);
 	g_hAds[g_iCount][type] = GetNativeCell(2);
+	LogMessage("Registered as: %i", g_hAds[g_iCount][type]);
 	strcopy(g_hAds[g_iCount][flagList], 16, sFlags);
 	strcopy(g_hAds[g_iCount][text], MSG_SIZE, sText);
+	LogMessage("Registered as: %i", g_hAds[g_iCount][type]);
 	if(fInterval > 0) {
 		g_hAds[g_iCount][timer] = CreateTimer(fInterval, Timer_ShowAd, g_iCount, TIMER_REPEAT|TIMER_FLAG_NO_MAPCHANGE);
 	}
-
+	LogMessage("Registered as: %i", g_hAds[g_iCount][type]);
 	g_iCount++;
 }
 
@@ -137,10 +141,10 @@ stock ValidateClient(client, adID) {
 	return false;
 }
 
-public DisplayAd(adID, const String:newText[MSG_SIZE]) {
+stock DisplayAd(adID, const String:newText[MSG_SIZE], client = 0) {
 	if(strlen(newText)>0) {
 		if (g_hAds[adID][type] == TYPE_CENTER) {
-			for (new i = 1; i <= MaxClients; i++) {
+			for (new i = (client == 0 ? 1 : client); i <= (client == 0 ? MaxClients : client); i++) {
 				if(ValidateClient(i, adID)) {
 					PrintCenterText(i, newText);
 
@@ -152,7 +156,7 @@ public DisplayAd(adID, const String:newText[MSG_SIZE]) {
 			}
 		}
 		if (g_hAds[adID][type] == TYPE_HINT) {
-			for (new i = 1; i <= MaxClients; i++) {
+			for (new i = (client == 0 ? 1 : client); i <= (client == 0 ? MaxClients : client); i++) {
 				if(ValidateClient(i, adID)) {
 					PrintHintText(i, newText);
 				}
@@ -163,7 +167,7 @@ public DisplayAd(adID, const String:newText[MSG_SIZE]) {
 			DrawPanelText(hPl, newText);
 			SetPanelCurrentKey(hPl, 10);
 
-			for (new i = 1; i <= MaxClients; i++) {
+			for (new i = (client == 0 ? 1 : client); i <= (client == 0 ? MaxClients : client); i++) {
 				if(ValidateClient(i, adID)) {
 					SendPanelToClient(hPl, i, Handler_DoNothing, 10);
 				}
@@ -176,7 +180,7 @@ public DisplayAd(adID, const String:newText[MSG_SIZE]) {
 			strcopy(buffer, MSG_SIZE, newText);
 			//CFormat(buffer, sizeof(buffer));
 
-			for (new i = 1; i <= MaxClients; i++) {
+			for (new i = (client == 0 ? 1 : client); i <= (client == 0 ? MaxClients : client); i++) {
 				if(ValidateClient(i, adID)) {
 					CPrintToChat(i, buffer);
 				}
@@ -202,13 +206,51 @@ public DisplayAd(adID, const String:newText[MSG_SIZE]) {
 			KvSetNum(hKv,   "level", 1);
 			KvSetNum(hKv,   "time",  10);
 
-			for (new i = 1; i <= MaxClients; i++) {
+			for (new i = (client == 0 ? 1 : client); i <= (client == 0 ? MaxClients : client); i++) {
 				if(ValidateClient(i, adID)) {
 					CreateDialog(i, hKv, DialogType_Msg);
 				}
 			}
 
 			CloseHandle(hKv);
+		}
+	}
+}
+public OnClientPutInServer(client) {
+	if(g_bEnabled) {
+		for(new i = 0; i < MAX_ADS; i++) {
+			if(g_hAds[i][interval] < 0.0) {
+
+				new Handle:pack;
+				CreateDataTimer(g_hAds[i][interval] * -1, Timer_ShowSpawnAd, pack, TIMER_FLAG_NO_MAPCHANGE);
+
+				LogMessage("Showing %i to %N", i, client);
+				WritePackCell(pack, client);
+				WritePackCell(pack, i);
+			}
+		}
+	}
+}
+
+public Action:Timer_ShowSpawnAd(Handle:spawn_timer, Handle:pack)
+{
+	if(g_bEnabled) {
+		new client, data_id;
+
+		ResetPack(pack);
+		client = ReadPackCell(pack);
+		data_id = ReadPackCell(pack);
+
+		if(client > 0 && client <= MaxClients && IsClientConnected(client) && IsClientInGame(client) && !IsFakeClient(client)) {
+			new String:sText[MSG_SIZE];
+			strcopy(sText, MSG_SIZE, g_hAds[data_id][text]);
+
+			Call_StartForward(g_hForwardSendAd);
+			Call_PushStringEx(sText,MSG_SIZE,SM_PARAM_STRING_COPY,SM_PARAM_COPYBACK);
+			Call_PushCell(MSG_SIZE);
+			Call_Finish();
+
+			DisplayAd(data_id, sText, client);
 		}
 	}
 }
