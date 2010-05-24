@@ -97,16 +97,14 @@ public Native_RegisterAd(Handle:hPlugin, iNumParams)
 	g_hAds[g_iCount][id] = g_iCount;
 	g_hAds[g_iCount][interval] = fInterval;
 	g_hAds[g_iCount][plugin] = _:hPlugin;
-	LogMessage("Registered as: %i", g_hAds[g_iCount][type]);
 	g_hAds[g_iCount][type] = GetNativeCell(2);
-	LogMessage("Registered as: %i", g_hAds[g_iCount][type]);
 	strcopy(g_hAds[g_iCount][flagList], 16, sFlags);
 	strcopy(g_hAds[g_iCount][text], MSG_SIZE, sText);
-	LogMessage("Registered as: %i", g_hAds[g_iCount][type]);
+
 	if(fInterval > 0) {
 		g_hAds[g_iCount][timer] = CreateTimer(fInterval, Timer_ShowAd, g_iCount, TIMER_REPEAT|TIMER_FLAG_NO_MAPCHANGE);
 	}
-	LogMessage("Registered as: %i", g_hAds[g_iCount][type]);
+
 	g_iCount++;
 }
 
