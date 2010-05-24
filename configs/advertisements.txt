@@ -26,6 +26,7 @@
 	{
 		"type"		"C"
 		"text"		"www.domain.com"
+		"interval"	"5.0"
 	}
 	"2"
 	{
