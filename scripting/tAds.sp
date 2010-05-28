@@ -42,6 +42,7 @@ new g_iCount = 0;
 
 //Forward
 new Handle:g_hForwardSendAd;
+new Handle:g_hForwardSendAdPost;
 
 static g_iTColors[13][3]         = {{255, 255, 255}, {255, 0, 0},    {0, 255, 0}, {0, 0, 255}, {255, 255, 0}, {255, 0, 255}, {0, 255, 255}, {255, 128, 0}, {255, 0, 128}, {128, 255, 0}, {0, 255, 128}, {128, 0, 255}, {0, 128, 255}};
 static String:g_sTColors[13][12] = {"{WHITE}",       "{RED}",        "{GREEN}",   "{BLUE}",    "{YELLOW}",    "{PURPLE}",    "{CYAN}",      "{ORANGE}",    "{PINK}",      "{OLIVE}",     "{LIME}",      "{VIOLET}",    "{LIGHTBLUE}"};
@@ -52,6 +53,7 @@ public OnPluginStart() {
 	g_hCvarInterval       = CreateConVar("sm_tads_interval", "30.0",                 "Amount of seconds between advertisements.");
 
 	g_hForwardSendAd = CreateGlobalForward("Ads_OnSend", ET_Ignore, Param_String, Param_Cell);
+	g_hForwardSendAdPost = CreateGlobalForward("Ads_OnSend_Post", ET_Ignore, Param_String, Param_Cell);
 }
 
 #if SOURCEMOD_V_MAJOR >= 1 && SOURCEMOD_V_MINOR >= 3
@@ -244,6 +246,11 @@ public Action:Timer_ShowSpawnAd(Handle:spawn_timer, Handle:pack)
 			strcopy(sText, MSG_SIZE, g_hAds[data_id][text]);
 
 			Call_StartForward(g_hForwardSendAd);
+			Call_PushStringEx(sText,MSG_SIZE,SM_PARAM_STRING_COPY,SM_PARAM_COPYBACK);
+			Call_PushCell(MSG_SIZE);
+			Call_Finish();
+
+			Call_StartForward(g_hForwardSendAdPost);
 			Call_PushStringEx(sText,MSG_SIZE,SM_PARAM_STRING_COPY,SM_PARAM_COPYBACK);
 			Call_PushCell(MSG_SIZE);
 			Call_Finish();
