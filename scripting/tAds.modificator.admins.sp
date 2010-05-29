@@ -6,9 +6,9 @@
 #define PL_VERSION    "0.0.1"
 
 public Plugin:myinfo = {
-	name        = "tAds, Tickrate",
-	author      = "Thrawn, Tsunami",
-	description = "Display Tickrate in ads",
+	name        = "tAds, Modificator, Admins",
+	author      = "Thrawn",
+	description = "Display Admins in ads",
 	version     = PL_VERSION,
 	url         = "http://aaa.wallbash.com"
 };
@@ -41,7 +41,6 @@ public Action:Ads_OnSend(String:sText[], size) {
 				Format(sBuffer, sizeof(sBuffer), "%s%N, ", sBuffer, i);
 			}
 		}
-
 
 		new String:result[strlen(sBuffer)];
 		strcopy(result, strlen(sBuffer)-1, sBuffer);

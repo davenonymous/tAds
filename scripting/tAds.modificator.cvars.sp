@@ -9,7 +9,7 @@
 #define CVAR_ENABLED  "ON"
 
 public Plugin:myinfo = {
-	name        = "tAds, Cvars",
+	name        = "tAds, Modificator, Cvars",
 	author      = "Thrawn",
 	description = "Display CVars in ads",
 	version     = PL_VERSION,

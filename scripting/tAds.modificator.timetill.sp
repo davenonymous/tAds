@@ -7,7 +7,7 @@
 #define PL_VERSION    "0.0.1"
 
 public Plugin:myinfo = {
-	name        = "tAds, Time left till date",
+	name        = "tAds, Modificator, Time left till date",
 	author      = "Thrawn",
 	description = "Display time left until a certain date in ads",
 	version     = PL_VERSION,

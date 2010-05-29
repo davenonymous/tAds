@@ -9,9 +9,9 @@
 #define CVAR_ENABLED  "ON"
 
 public Plugin:myinfo = {
-	name        = "tAds, Time left till date",
+	name        = "tAds, Modificator, Now",
 	author      = "Thrawn",
-	description = "Display time left until a certain date in ads",
+	description = "Display current time in ads",
 	version     = PL_VERSION,
 	url         = "http://aaa.wallbash.com"
 };

@@ -7,7 +7,7 @@
 #define PL_VERSION    "0.0.1"
 
 public Plugin:myinfo = {
-	name        = "tAds, Conditional Modificators",
+	name        = "tAds, Modificator, If",
 	author      = "Thrawn",
 	description = "Replaces based on conditions",
 	version     = PL_VERSION,

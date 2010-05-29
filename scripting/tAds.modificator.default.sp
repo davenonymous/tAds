@@ -6,7 +6,7 @@
 #define PL_VERSION    "0.0.1"
 
 public Plugin:myinfo = {
-	name        = "tAds, Standard",
+	name        = "tAds, Modificator, Standard",
 	author      = "Thrawn, Tsunami",
 	description = "Display some standard infos in ads",
 	version     = PL_VERSION,
