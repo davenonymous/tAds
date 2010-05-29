@@ -3,7 +3,7 @@
 #endif
 #define _tads_included_
 
-#define MSG_SIZE 255
+#define MSG_SIZE 256
 
 enum ad_types {
 	TYPE_CENTER,
@@ -35,6 +35,27 @@ stock ad_types:ParseType(const String:sText[]) {
 
 	//Default: Center
 	return TYPE_CENTER;
+}
+
+stock bool:HasFlag(iClient, String:sFlags[16]) {
+	decl AdminFlag:fFlagList[16];
+
+	if (!StrEqual(sFlags, "none")) {
+		FlagBitsToArray(ReadFlagString(sFlags), fFlagList, sizeof(fFlagList));
+
+		new iFlags = GetUserFlagBits(iClient);
+		if (iFlags & ADMFLAG_ROOT) {
+			return true;
+		} else {
+			for (new i = 0; i < sizeof(fFlagList); i++) {
+				if (iFlags & FlagToBit(fFlagList[i])) {
+					return true;
+				}
+			}
+		}
+	}
+
+	return false;
 }
 
 native Ads_RegisterAd(Float:interval, ad_types:type, const String:flags[], const String:text[], const String:trigger[]);

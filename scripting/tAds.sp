@@ -7,7 +7,6 @@
 #define PL_VERSION    "0.0.1"
 
 #define MAX_ADS 128
-#define MSG_SIZE 255
 
 public Plugin:myinfo = {
 	name        = "tAds",
@@ -24,8 +23,8 @@ enum AD_INFO {
 	plugin,
 	Handle:timer = INVALID_HANDLE,
 	String:flagList[16],
-	String:text[256],
-	String:trigger[256]
+	String:text[MSG_SIZE],
+	String:trigger[MSG_SIZE]
 }
 
 new Handle:g_hCenterAd[MAXPLAYERS + 1];
@@ -66,7 +65,7 @@ public OnPluginStart() {
 	public bool:AskPluginLoad(Handle:myself, bool:late, String:error[], err_max)
 #endif
 {
-	RegPluginLibrary("psycore");
+	RegPluginLibrary("tads");
 
 	CreateNative("Ads_RegisterAd", Native_RegisterAd);
 	CreateNative("Ads_UnRegisterAds", Native_UnRegisterAds);
@@ -96,7 +95,7 @@ public Action:Event_Triggers(iClient, iArgs)
 		for(new i = 0; i < MAX_ADS; i++) {
 			if(StrEqual(g_hAds[i][trigger],strArgument)) {
 				new Handle:pack;
-
+				LogMessage("Triggered ad: %i (for client: %N)", i, iClient);
 				CreateDataTimer(0.0, Timer_ShowSpawnAd, pack, TIMER_FLAG_NO_MAPCHANGE);
 
 				WritePackCell(pack, iClient);
@@ -137,6 +136,8 @@ public Native_RegisterAd(Handle:hPlugin, iNumParams)
 	strcopy(g_hAds[g_iCount][text], MSG_SIZE, sText);
 	strcopy(g_hAds[g_iCount][trigger], MSG_SIZE, sTrigger);
 
+	LogMessage("Registered ad: %s", sText);
+
 	if(fInterval > 0) {
 		g_hAds[g_iCount][timer] = CreateTimer(fInterval, Timer_ShowAd, g_iCount, TIMER_REPEAT|TIMER_FLAG_NO_MAPCHANGE);
 	}
@@ -151,7 +152,14 @@ public Native_UnRegisterAds(Handle:hPlugin, iNumParams)
 {
 	for(new i = 0; i < MAX_ADS; i++) {
 		if(g_hAds[i][plugin] == _:hPlugin) {
+			g_hAds[i][id] = 0;
+			g_hAds[i][type] = TYPE_SAY;
+			g_hAds[i][interval] = 0.0;
+			g_hAds[i][plugin] = 0;
+			g_hAds[i][timer] = INVALID_HANDLE;
 			strcopy(g_hAds[i][text], MSG_SIZE, "");
+			strcopy(g_hAds[i][trigger], MSG_SIZE, "");
+			strcopy(g_hAds[i][flagList], 16, "");
 		}
 	}
 }
@@ -260,7 +268,6 @@ public OnClientPutInServer(client) {
 	if(g_bEnabled) {
 		for(new i = 0; i < MAX_ADS; i++) {
 			if(g_hAds[i][interval] < 0.0) {
-
 				new Handle:pack;
 				CreateDataTimer(g_hAds[i][interval] * -1, Timer_ShowSpawnAd, pack, TIMER_FLAG_NO_MAPCHANGE);
 
@@ -284,7 +291,7 @@ public Action:Timer_ShowSpawnAd(Handle:spawn_timer, Handle:pack)
 		if(client > 0 && client <= MaxClients && IsClientConnected(client) && IsClientInGame(client) && !IsFakeClient(client)) {
 			new String:sText[MSG_SIZE];
 			strcopy(sText, MSG_SIZE, g_hAds[data_id][text]);
-
+			LogMessage("triggered input: %s", sText);
 			Call_StartForward(g_hForwardSendAd);
 			Call_PushStringEx(sText,MSG_SIZE,SM_PARAM_STRING_COPY,SM_PARAM_COPYBACK);
 			Call_PushCell(MSG_SIZE);
@@ -302,7 +309,7 @@ public Action:Timer_ShowSpawnAd(Handle:spawn_timer, Handle:pack)
 }
 
 public Action:Timer_CenterAd(Handle:htimer, Handle:pack) {
-	decl String:sText[256];
+	decl String:sText[MSG_SIZE];
 	static iCount          = 0;
 
 	ResetPack(pack);
@@ -341,29 +348,22 @@ public Action:Timer_ShowAd(Handle:htimer, any:data_id) {
 	}
 }
 
-bool:HasFlag(iClient, String:sFlags[16]) {
-	decl AdminFlag:fFlagList[16];
-
-	if (!StrEqual(sFlags, "none")) {
-		FlagBitsToArray(ReadFlagString(sFlags), fFlagList, sizeof(fFlagList));
-
-		new iFlags = GetUserFlagBits(iClient);
-		if (iFlags & ADMFLAG_ROOT) {
-			return true;
-		} else {
-			for (new i = 0; i < sizeof(fFlagList); i++) {
-				if (iFlags & FlagToBit(fFlagList[i])) {
-					return true;
-				}
-			}
-		}
-	}
-
-	return false;
-}
-
 public Handler_DoNothing(Handle:menu, MenuAction:action, param1, param2) {}
 
-public OnPluginEnd() {
+public OnMapStart() {
+	g_iCount = 0;
+	for(new i=0; i < MAX_ADS; i++) {
+		g_hAds[i][id] = 0;
+		g_hAds[i][type] = TYPE_SAY;
+		g_hAds[i][interval] = 0.0;
+		g_hAds[i][plugin] = 0;
+		g_hAds[i][timer] = INVALID_HANDLE;
+		strcopy(g_hAds[i][text], MSG_SIZE, "");
+		strcopy(g_hAds[i][trigger], MSG_SIZE, "");
+		strcopy(g_hAds[i][flagList], 16, "");
+	}
+}
+
+public OnMapEnd() {
 	ClearTimers();
 }

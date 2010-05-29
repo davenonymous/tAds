@@ -5,8 +5,6 @@
 #include <tads>
 
 #define PL_VERSION    "0.0.1"
-#define CVAR_DISABLED "OFF"
-#define CVAR_ENABLED  "ON"
 
 public Plugin:myinfo = {
 	name        = "tAds, Time left till date",
