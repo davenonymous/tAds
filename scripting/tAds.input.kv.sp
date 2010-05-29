@@ -78,12 +78,16 @@ ParseAds() {
 }
 
 KvReadAdvertisementBlock(Handle:hKVAdvertisements) {
-	new String:sText[MSG_SIZE], String:sFlags[16], String:sType[6];
+	new String:sText[MSG_SIZE], String:sFlags[16], String:sType[6], String:sEnabled[3], String:sTrigger[255];
 
-	KvGetString(hKVAdvertisements, "type",  sType,  sizeof(sType));
-	KvGetString(hKVAdvertisements, "text",  sText,  sizeof(sText));
-	KvGetString(hKVAdvertisements, "flags", sFlags, sizeof(sFlags), "none");
+	KvGetString(hKVAdvertisements, "enabled", sEnabled, sizeof(sEnabled), "1");
+	if(StrEqual(sEnabled,"1")) {
+		KvGetString(hKVAdvertisements, "type",  sType,  sizeof(sType));
+		KvGetString(hKVAdvertisements, "text",  sText,  sizeof(sText));
+		KvGetString(hKVAdvertisements, "flags", sFlags, sizeof(sFlags), "none");
+		KvGetString(hKVAdvertisements, "trigger", sTrigger, sizeof(sTrigger), "");
 
-	new Float:fInterval = KvGetFloat(hKVAdvertisements, "interval", 0.0);
-	Ads_RegisterAd(fInterval, ParseType(sType), sFlags, sText);
+		new Float:fInterval = KvGetFloat(hKVAdvertisements, "interval", 0.0);
+		Ads_RegisterAd(fInterval, ParseType(sType), sFlags, sText, sTrigger);
+	}
 }

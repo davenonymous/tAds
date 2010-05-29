@@ -20,7 +20,7 @@ public Plugin:myinfo = {
 new Handle:g_rTimeLeft = INVALID_HANDLE;
 
 public OnPluginStart() {
-	CreateConVar("sm_tads_tltd_version", PL_VERSION, "Display time left till date in ads", FCVAR_PLUGIN|FCVAR_SPONLY|FCVAR_REPLICATED|FCVAR_NOTIFY);
+	CreateConVar("sm_tads_time_version", PL_VERSION, "Display time left till date in ads", FCVAR_PLUGIN|FCVAR_SPONLY|FCVAR_REPLICATED|FCVAR_NOTIFY);
 
 	g_rTimeLeft = CompileRegex("{timetill:([0-9]*)}", PCRE_CASELESS|PCRE_UNGREEDY);
 }

@@ -25,7 +25,7 @@ enum AD_INFO {
 	Handle:timer = INVALID_HANDLE,
 	String:flagList[16],
 	String:text[256],
-
+	String:trigger[256]
 }
 
 new Handle:g_hCenterAd[MAXPLAYERS + 1];
@@ -35,6 +35,7 @@ new Handle:g_hCvarInterval;
 //Convars:
 new bool:g_bEnabled;
 new Float:g_fDefaultInterval = 30.0;
+new bool:g_bHaveTrigger = false;
 
 //Ad Tracking
 new g_hAds[MAX_ADS][AD_INFO];
@@ -53,7 +54,10 @@ public OnPluginStart() {
 	g_hCvarInterval       = CreateConVar("sm_tads_interval", "30.0",                 "Amount of seconds between advertisements.");
 
 	g_hForwardSendAd = CreateGlobalForward("Ads_OnSend", ET_Ignore, Param_String, Param_Cell);
-	g_hForwardSendAdPost = CreateGlobalForward("Ads_OnSend_Post", ET_Ignore, Param_String, Param_Cell);
+	g_hForwardSendAdPost = CreateGlobalForward("Ads_OnSendPost", ET_Ignore, Param_String, Param_Cell);
+
+	RegConsoleCmd("say", Event_Triggers);
+	RegConsoleCmd("say_team", Event_Triggers);
 }
 
 #if SOURCEMOD_V_MAJOR >= 1 && SOURCEMOD_V_MINOR >= 3
@@ -80,6 +84,32 @@ public OnConfigsExecuted() {
 	g_fDefaultInterval = GetConVarFloat(g_hCvarInterval);
 }
 
+public Action:Event_Triggers(iClient, iArgs)
+{
+	if(g_bHaveTrigger) {
+		if (iClient < 1 || iClient > MaxClients) return Plugin_Continue;
+		if (iArgs < 1) return Plugin_Continue;
+
+		// Retrieve the first argument and check it's a valid trigger
+		decl String:strArgument[64]; GetCmdArg(1, strArgument, sizeof(strArgument));
+
+		for(new i = 0; i < MAX_ADS; i++) {
+			if(StrEqual(g_hAds[i][trigger],strArgument)) {
+				new Handle:pack;
+
+				CreateDataTimer(0.0, Timer_ShowSpawnAd, pack, TIMER_FLAG_NO_MAPCHANGE);
+
+				WritePackCell(pack, iClient);
+				WritePackCell(pack, i);
+
+				return Plugin_Handled;
+			}
+		}
+	}
+	// If no valid argument found, pass
+	return Plugin_Continue;
+}
+
 //native Ads_RegisterAd(Float:interval, ad_types:type, const String:flags[], const String:text[]);
 public Native_RegisterAd(Handle:hPlugin, iNumParams)
 {
@@ -95,6 +125,9 @@ public Native_RegisterAd(Handle:hPlugin, iNumParams)
 	new String:sText[MSG_SIZE];
 	GetNativeString(4, sText, sizeof(sText)+1);
 
+	new String:sTrigger[MSG_SIZE];
+	GetNativeString(5, sTrigger, sizeof(sTrigger)+1);
+
 	//Pack in one piece, create timer
 	g_hAds[g_iCount][id] = g_iCount;
 	g_hAds[g_iCount][interval] = fInterval;
@@ -102,10 +135,14 @@ public Native_RegisterAd(Handle:hPlugin, iNumParams)
 	g_hAds[g_iCount][type] = GetNativeCell(2);
 	strcopy(g_hAds[g_iCount][flagList], 16, sFlags);
 	strcopy(g_hAds[g_iCount][text], MSG_SIZE, sText);
+	strcopy(g_hAds[g_iCount][trigger], MSG_SIZE, sTrigger);
 
 	if(fInterval > 0) {
 		g_hAds[g_iCount][timer] = CreateTimer(fInterval, Timer_ShowAd, g_iCount, TIMER_REPEAT|TIMER_FLAG_NO_MAPCHANGE);
 	}
+
+	if(!StrEqual(sTrigger,""))
+		g_bHaveTrigger = true;
 
 	g_iCount++;
 }
@@ -161,6 +198,9 @@ stock DisplayAd(adID, const String:newText[MSG_SIZE], client = 0) {
 					PrintHintText(i, newText);
 				}
 			}
+		}
+		if (g_hAds[adID][type] == TYPE_DEBUG) {
+			LogMessage("%s", newText);
 		}
 		if (g_hAds[adID][type] == TYPE_MENU) {
 			new Handle:hPl = CreatePanel();
@@ -255,7 +295,8 @@ public Action:Timer_ShowSpawnAd(Handle:spawn_timer, Handle:pack)
 			Call_PushCell(MSG_SIZE);
 			Call_Finish();
 
-			DisplayAd(data_id, sText, client);
+			if(!StrEqual(sText,""))
+				DisplayAd(data_id, sText, client);
 		}
 	}
 }
@@ -290,7 +331,13 @@ public Action:Timer_ShowAd(Handle:htimer, any:data_id) {
 		Call_PushCell(MSG_SIZE);
 		Call_Finish();
 
-		DisplayAd(data_id, sText);
+		Call_StartForward(g_hForwardSendAdPost);
+		Call_PushStringEx(sText,MSG_SIZE,SM_PARAM_STRING_COPY,SM_PARAM_COPYBACK);
+		Call_PushCell(MSG_SIZE);
+		Call_Finish();
+
+		if(!StrEqual(sText,""))
+			DisplayAd(data_id, sText);
 	}
 }
 
