@@ -101,7 +101,7 @@ public Action:Ads_OnSend(String:sText[], size) {
 		new String:pattern[MSG_SIZE];
 		Format(pattern, MSG_SIZE, "{%s}", g_oList[i][modificator]);
 
-		ReplaceString(sText, size, pattern, g_oList[i][replacement]);
+		ReplaceString(sText, size, pattern, g_oList[i][replacement], false);
 	}
 
 	return Plugin_Changed;

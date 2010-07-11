@@ -14,7 +14,7 @@ enum ad_types {
 	TYPE_DEBUG
 }
 
-stock ad_types:ParseType(const String:sText[]) {
+stock ad_types:ParseType(String:sText[]) {
 	if(StrEqual(sText, "C"))
 		return TYPE_CENTER;
 
@@ -37,6 +37,16 @@ stock ad_types:ParseType(const String:sText[]) {
 	return TYPE_CENTER;
 }
 
+stock HasType(String:ad[], ad_types:adtype) {
+	for (new i = 0; i < strlen(ad); i++) {
+		if(ParseType(ad[i]) == adtype)
+			return true;
+	}
+
+	return false;
+}
+
+
 stock bool:HasFlag(iClient, String:sFlags[16]) {
 	decl AdminFlag:fFlagList[16];
 
@@ -58,8 +68,12 @@ stock bool:HasFlag(iClient, String:sFlags[16]) {
 	return false;
 }
 
-native Ads_RegisterAd(Float:interval, ad_types:type, const String:flags[], const String:text[], const String:trigger[]);
+native bool:Ads_GetAdText(iAdId, String:AdText[], size);
+native Ads_GetAdCount();
+native Ads_RegisterAd(Float:interval, String:types[], const String:flags[], const String:text[], const String:trigger[], const String:condition[], const String:filter[]);
 native Ads_UnRegisterAds();
 
+forward Action:Ads_OnSendCondition(String:sCondition[]);
+forward Action:Ads_OnSendFilter(String:sFilter[], client);
 forward Action:Ads_OnSend(String:sText[],length);
 forward Action:Ads_OnSendPost(String:sText[],length);

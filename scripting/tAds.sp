@@ -6,7 +6,7 @@
 
 #define PL_VERSION    "0.0.1"
 
-#define MAX_ADS 128
+#define MAX_ADS 16
 
 public Plugin:myinfo = {
 	name        = "tAds",
@@ -18,13 +18,15 @@ public Plugin:myinfo = {
 
 enum AD_INFO {
 	id = 0,
-	ad_types:type = TYPE_SAY,
 	Float:interval,
 	plugin,
 	Handle:timer = INVALID_HANDLE,
 	String:flagList[16],
+	String:type[8],
 	String:text[MSG_SIZE],
-	String:trigger[MSG_SIZE]
+	String:trigger[MSG_SIZE],
+	String:condition[MSG_SIZE],
+	String:filter[MSG_SIZE]
 }
 
 new Handle:g_hCenterAd[MAXPLAYERS + 1];
@@ -43,6 +45,8 @@ new g_iCount = 0;
 //Forward
 new Handle:g_hForwardSendAd;
 new Handle:g_hForwardSendAdPost;
+new Handle:g_hForwardSendAdCondition;
+new Handle:g_hForwardSendAdFilter;
 
 static g_iTColors[13][3]         = {{255, 255, 255}, {255, 0, 0},    {0, 255, 0}, {0, 0, 255}, {255, 255, 0}, {255, 0, 255}, {0, 255, 255}, {255, 128, 0}, {255, 0, 128}, {128, 255, 0}, {0, 255, 128}, {128, 0, 255}, {0, 128, 255}};
 static String:g_sTColors[13][12] = {"{WHITE}",       "{RED}",        "{GREEN}",   "{BLUE}",    "{YELLOW}",    "{PURPLE}",    "{CYAN}",      "{ORANGE}",    "{PINK}",      "{OLIVE}",     "{LIME}",      "{VIOLET}",    "{LIGHTBLUE}"};
@@ -54,6 +58,8 @@ public OnPluginStart() {
 
 	g_hForwardSendAd = CreateGlobalForward("Ads_OnSend", ET_Ignore, Param_String, Param_Cell);
 	g_hForwardSendAdPost = CreateGlobalForward("Ads_OnSendPost", ET_Ignore, Param_String, Param_Cell);
+	g_hForwardSendAdCondition = CreateGlobalForward("Ads_OnSendCondition", ET_Hook, Param_String);
+	g_hForwardSendAdFilter = CreateGlobalForward("Ads_OnSendFilter", ET_Hook, Param_String, Param_Cell);
 
 	RegConsoleCmd("say", Event_Triggers);
 	RegConsoleCmd("say_team", Event_Triggers);
@@ -67,6 +73,8 @@ public OnPluginStart() {
 {
 	RegPluginLibrary("tads");
 
+	CreateNative("Ads_GetAdCount", Native_GetAdCount);
+	CreateNative("Ads_GetAdText", Native_GetAdText);
 	CreateNative("Ads_RegisterAd", Native_RegisterAd);
 	CreateNative("Ads_UnRegisterAds", Native_UnRegisterAds);
 
@@ -93,7 +101,7 @@ public Action:Event_Triggers(iClient, iArgs)
 		decl String:strArgument[64]; GetCmdArg(1, strArgument, sizeof(strArgument));
 
 		for(new i = 0; i < MAX_ADS; i++) {
-			if(StrEqual(g_hAds[i][trigger],strArgument)) {
+			if(StrEqual(g_hAds[i][trigger],strArgument,false)) {
 				new Handle:pack;
 				LogMessage("Triggered ad: %i (for client: %N)", i, iClient);
 				CreateDataTimer(0.0, Timer_ShowSpawnAd, pack, TIMER_FLAG_NO_MAPCHANGE);
@@ -109,7 +117,26 @@ public Action:Event_Triggers(iClient, iArgs)
 	return Plugin_Continue;
 }
 
-//native Ads_RegisterAd(Float:interval, ad_types:type, const String:flags[], const String:text[]);
+public Native_GetAdCount(Handle:hPlugin, iNumParams) {
+	return g_iCount;
+}
+
+public Native_GetAdText(Handle:hPlugin, iNumParams)
+{
+	new iAdId = GetNativeCell(1);
+	new iAdSize = GetNativeCell(2);
+
+	//LogMessage("looking for attribute: %i", iAttributeId);
+
+	if(g_hAds[iAdId][id] != 0) {
+		SetNativeString(2, g_hAds[iAdId][text], iAdSize, false);
+		return true;
+	}
+
+	return false;
+}
+
+//native Ads_RegisterAd(Float:interval, String:types[], const String:flags[], const String:text[]);
 public Native_RegisterAd(Handle:hPlugin, iNumParams)
 {
 	new Float:fInterval = GetNativeCell(1);
@@ -117,6 +144,9 @@ public Native_RegisterAd(Handle:hPlugin, iNumParams)
 	if(fInterval == 0.0) {
 		fInterval = g_fDefaultInterval;
 	}
+
+	new String:sTypes[8];
+	GetNativeString(2, sTypes, sizeof(sTypes)+1);
 
 	new String:sFlags[16];
 	GetNativeString(3, sFlags, sizeof(sFlags)+1);
@@ -127,14 +157,24 @@ public Native_RegisterAd(Handle:hPlugin, iNumParams)
 	new String:sTrigger[MSG_SIZE];
 	GetNativeString(5, sTrigger, sizeof(sTrigger)+1);
 
+	new String:sCondition[MSG_SIZE];
+	GetNativeString(6, sCondition, sizeof(sCondition)+1);
+
+	new String:sFilter[MSG_SIZE];
+	GetNativeString(7, sFilter, sizeof(sFilter)+1);
+
+
 	//Pack in one piece, create timer
 	g_hAds[g_iCount][id] = g_iCount;
 	g_hAds[g_iCount][interval] = fInterval;
 	g_hAds[g_iCount][plugin] = _:hPlugin;
-	g_hAds[g_iCount][type] = GetNativeCell(2);
+	strcopy(g_hAds[g_iCount][type], 8, sTypes);
 	strcopy(g_hAds[g_iCount][flagList], 16, sFlags);
 	strcopy(g_hAds[g_iCount][text], MSG_SIZE, sText);
 	strcopy(g_hAds[g_iCount][trigger], MSG_SIZE, sTrigger);
+	strcopy(g_hAds[g_iCount][condition], MSG_SIZE, sCondition);
+	strcopy(g_hAds[g_iCount][filter], MSG_SIZE, sFilter);
+
 
 	LogMessage("Registered ad: %s", sText);
 
@@ -153,12 +193,14 @@ public Native_UnRegisterAds(Handle:hPlugin, iNumParams)
 	for(new i = 0; i < MAX_ADS; i++) {
 		if(g_hAds[i][plugin] == _:hPlugin) {
 			g_hAds[i][id] = 0;
-			g_hAds[i][type] = TYPE_SAY;
 			g_hAds[i][interval] = 0.0;
 			g_hAds[i][plugin] = 0;
 			g_hAds[i][timer] = INVALID_HANDLE;
+			strcopy(g_hAds[i][type], 8, "");
 			strcopy(g_hAds[i][text], MSG_SIZE, "");
 			strcopy(g_hAds[i][trigger], MSG_SIZE, "");
+			strcopy(g_hAds[i][condition], MSG_SIZE, "");
+			strcopy(g_hAds[i][filter], MSG_SIZE, "");
 			strcopy(g_hAds[i][flagList], 16, "");
 		}
 	}
@@ -174,10 +216,23 @@ public ClearTimers() {
 }
 
 stock ValidateClient(client, adID) {
+	if(!IsClientInGame(client) || IsFakeClient(client))
+		return false;
+
 	decl String:sFlags[16];
 	strcopy(sFlags, 16, g_hAds[adID][flagList]);
-	if	( IsClientInGame(client) && !IsFakeClient(client) &&
-		(( !StrEqual(sFlags, "") && !(!StrEqual(sFlags, "none") && HasFlag(client, sFlags))) ||
+
+	Call_StartForward(g_hForwardSendAdFilter);
+	Call_PushString(g_hAds[adID][filter]);
+	Call_PushCell(client);
+
+	new result;
+	Call_Finish(result);
+
+	new bAllowed = result == 0 ? true : false;
+
+	if	( bAllowed &&
+		(( !StrEqual(sFlags, "") && !(!StrEqual(sFlags, "none", false) && HasFlag(client, sFlags))) ||
 			StrEqual(sFlags, "") && (GetUserFlagBits(client) & ADMFLAG_GENERIC ||
 									 GetUserFlagBits(client) & ADMFLAG_ROOT))) {
 									 	return true;
@@ -188,7 +243,7 @@ stock ValidateClient(client, adID) {
 
 stock DisplayAd(adID, const String:newText[MSG_SIZE], client = 0) {
 	if(strlen(newText)>0) {
-		if (g_hAds[adID][type] == TYPE_CENTER) {
+		if (HasType(g_hAds[adID][type], TYPE_CENTER)) {
 			for (new i = (client == 0 ? 1 : client); i <= (client == 0 ? MaxClients : client); i++) {
 				if(ValidateClient(i, adID)) {
 					PrintCenterText(i, newText);
@@ -200,17 +255,17 @@ stock DisplayAd(adID, const String:newText[MSG_SIZE], client = 0) {
 				}
 			}
 		}
-		if (g_hAds[adID][type] == TYPE_HINT) {
+		if (HasType(g_hAds[adID][type], TYPE_HINT)) {
 			for (new i = (client == 0 ? 1 : client); i <= (client == 0 ? MaxClients : client); i++) {
 				if(ValidateClient(i, adID)) {
 					PrintHintText(i, newText);
 				}
 			}
 		}
-		if (g_hAds[adID][type] == TYPE_DEBUG) {
+		if (HasType(g_hAds[adID][type], TYPE_DEBUG)) {
 			LogMessage("%s", newText);
 		}
-		if (g_hAds[adID][type] == TYPE_MENU) {
+		if (HasType(g_hAds[adID][type], TYPE_MENU)) {
 			new Handle:hPl = CreatePanel();
 			DrawPanelText(hPl, newText);
 			SetPanelCurrentKey(hPl, 10);
@@ -223,7 +278,7 @@ stock DisplayAd(adID, const String:newText[MSG_SIZE], client = 0) {
 
 			CloseHandle(hPl);
 		}
-		if (g_hAds[adID][type] == TYPE_SAY) {
+		if (HasType(g_hAds[adID][type], TYPE_SAY)) {
 			new String:buffer[MSG_SIZE];
 			strcopy(buffer, MSG_SIZE, newText);
 			//CFormat(buffer, sizeof(buffer));
@@ -234,12 +289,12 @@ stock DisplayAd(adID, const String:newText[MSG_SIZE], client = 0) {
 				}
 			}
 		}
-		if (g_hAds[adID][type] == TYPE_TOP) {
+		if (HasType(g_hAds[adID][type], TYPE_TOP)) {
 			decl String:sColor[16];
 			new iColor = -1, iPos = BreakString(newText, sColor, sizeof(sColor));
 
 			for (new i = 0; i < sizeof(g_sTColors); i++) {
-				if (StrEqual(sColor, g_sTColors[i])) {
+				if (StrEqual(sColor, g_sTColors[i], false)) {
 					iColor = i;
 				}
 			}
@@ -292,6 +347,15 @@ public Action:Timer_ShowSpawnAd(Handle:spawn_timer, Handle:pack)
 			new String:sText[MSG_SIZE];
 			strcopy(sText, MSG_SIZE, g_hAds[data_id][text]);
 			LogMessage("triggered input: %s", sText);
+			Call_StartForward(g_hForwardSendAdCondition);
+			Call_PushString(g_hAds[data_id][condition]);
+			new result;
+			Call_Finish(result);
+
+			LogMessage("Condition error level: %i", result);
+			if(result > 0)
+				return;
+
 			Call_StartForward(g_hForwardSendAd);
 			Call_PushStringEx(sText,MSG_SIZE,SM_PARAM_STRING_COPY,SM_PARAM_COPYBACK);
 			Call_PushCell(MSG_SIZE);
@@ -333,6 +397,14 @@ public Action:Timer_ShowAd(Handle:htimer, any:data_id) {
 		new String:sText[MSG_SIZE];
 		strcopy(sText, MSG_SIZE, g_hAds[data_id][text]);
 
+		Call_StartForward(g_hForwardSendAdCondition);
+		Call_PushString(g_hAds[data_id][condition]);
+		new result;
+		Call_Finish(result);
+
+		if(result > 0)
+			return;
+
 		Call_StartForward(g_hForwardSendAd);
 		Call_PushStringEx(sText,MSG_SIZE,SM_PARAM_STRING_COPY,SM_PARAM_COPYBACK);
 		Call_PushCell(MSG_SIZE);
@@ -354,12 +426,14 @@ public OnMapStart() {
 	g_iCount = 0;
 	for(new i=0; i < MAX_ADS; i++) {
 		g_hAds[i][id] = 0;
-		g_hAds[i][type] = TYPE_SAY;
 		g_hAds[i][interval] = 0.0;
 		g_hAds[i][plugin] = 0;
 		g_hAds[i][timer] = INVALID_HANDLE;
+		strcopy(g_hAds[i][type], 8, "");
 		strcopy(g_hAds[i][text], MSG_SIZE, "");
 		strcopy(g_hAds[i][trigger], MSG_SIZE, "");
+		strcopy(g_hAds[i][condition], MSG_SIZE, "");
+		strcopy(g_hAds[i][filter], MSG_SIZE, "");
 		strcopy(g_hAds[i][flagList], 16, "");
 	}
 }

@@ -23,8 +23,8 @@ new Handle:g_rBool = INVALID_HANDLE;
 public OnPluginStart() {
 	CreateConVar("sm_tads_cvars_version", PL_VERSION, "Display CVars in ads", FCVAR_PLUGIN|FCVAR_SPONLY|FCVAR_REPLICATED|FCVAR_NOTIFY);
 
-	g_rCvar = CompileRegex("{cvar:(.*)}", PCRE_CASELESS|PCRE_UNGREEDY);
-	g_rBool = CompileRegex("{bool:(.*)}", PCRE_CASELESS|PCRE_UNGREEDY);
+	g_rCvar = CompileRegex("{cvar:'(.*)'}", PCRE_CASELESS|PCRE_UNGREEDY);
+	g_rBool = CompileRegex("{bool:'(.*)'}", PCRE_CASELESS|PCRE_UNGREEDY);
 }
 
 public Action:Ads_OnSend(String:sText[], size) {

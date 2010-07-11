@@ -1,0 +1,16 @@
+"RSSFeeds"
+{
+	"1"
+	{
+		"url"		"http://forums.alliedmods.net/external.php?type=RSS2&forumids=52"
+		"interval"	"60.0"
+		"amount"	"5"
+		"enabled"	"0"
+	}
+	"2"
+	{
+		"url"		"http://www.teamfortress.com/rss.xml"
+		"interval"	"60.0"
+		"amount"	"1"
+	}
+}

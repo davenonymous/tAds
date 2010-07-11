@@ -31,6 +31,9 @@ public OnPluginStart() {
 
 public OnConfigsExecuted() {
 	g_bEnabled = GetConVarBool(g_hCvarEnable);
+	if(!g_bEnabled) {
+		Ads_UnRegisterAds();
+	}
 
 	decl String:sFile[PLATFORM_MAX_PATH];
 	GetConVarString(g_hCvarFile, sFile, PLATFORM_MAX_PATH);
@@ -78,7 +81,7 @@ ParseAds() {
 }
 
 KvReadAdvertisementBlock(Handle:hKVAdvertisements) {
-	new String:sText[MSG_SIZE], String:sFlags[16], String:sType[6], String:sEnabled[3], String:sTrigger[255];
+	new String:sText[MSG_SIZE], String:sFlags[16], String:sType[6], String:sEnabled[3], String:sTrigger[MSG_SIZE], String:sCondition[MSG_SIZE], String:sFilter[MSG_SIZE];
 
 	KvGetString(hKVAdvertisements, "enabled", sEnabled, sizeof(sEnabled), "1");
 	if(StrEqual(sEnabled,"1")) {
@@ -86,8 +89,10 @@ KvReadAdvertisementBlock(Handle:hKVAdvertisements) {
 		KvGetString(hKVAdvertisements, "text",  sText,  sizeof(sText));
 		KvGetString(hKVAdvertisements, "flags", sFlags, sizeof(sFlags), "none");
 		KvGetString(hKVAdvertisements, "trigger", sTrigger, sizeof(sTrigger), "");
+		KvGetString(hKVAdvertisements, "condition", sCondition, sizeof(sCondition), "");
+		KvGetString(hKVAdvertisements, "filter", sFilter, sizeof(sFilter), "");
 
 		new Float:fInterval = KvGetFloat(hKVAdvertisements, "interval", 0.0);
-		Ads_RegisterAd(fInterval, ParseType(sType), sFlags, sText, sTrigger);
+		Ads_RegisterAd(fInterval, sType, sFlags, sText, sTrigger, sCondition, sFilter);
 	}
 }

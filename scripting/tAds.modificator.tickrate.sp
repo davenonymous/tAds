@@ -41,10 +41,10 @@ public OnGameFrame() {
 }
 
 public Action:Ads_OnSend(String:sText[], size) {
-	if (StrContains(sText, "{TICKRATE}")   != -1) {
+	if (StrContains(sText, "{TICKRATE}", false)   != -1) {
 		new String:sBuffer[255];
 		IntToString(g_iTickrate, sBuffer, sizeof(sBuffer));
-		ReplaceString(sText, size, "{TICKRATE}",   sBuffer);
+		ReplaceString(sText, size, "{TICKRATE}",   sBuffer, false);
 	}
 
 	return Plugin_Changed;

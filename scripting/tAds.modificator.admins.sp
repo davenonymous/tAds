@@ -33,7 +33,7 @@ public OnConfigsExecuted() {
 }
 
 public Action:Ads_OnSend(String:sText[], size) {
-	if (StrContains(sText, "{admins}") != -1) {
+	if (StrContains(sText, "{admins}", false) != -1) {
 		new String:sBuffer[255];
 
 		for(new i = 1; i < MaxClients; i++) {
@@ -45,7 +45,7 @@ public Action:Ads_OnSend(String:sText[], size) {
 		new String:result[strlen(sBuffer)];
 		strcopy(result, strlen(sBuffer)-1, sBuffer);
 
-		ReplaceString(sText, size, "{admins}", result);
+		ReplaceString(sText, size, "{admins}", result, false);
 	}
 
 	return Plugin_Changed;

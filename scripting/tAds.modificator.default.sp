@@ -20,27 +20,27 @@ public OnPluginStart() {
 public Action:Ads_OnSend(String:sText[], size) {
 	decl String:sBuffer[256];
 
-	if (StrContains(sText, "{DATE}")       != -1) {
+	if (StrContains(sText, "{DATE}", false)       != -1) {
 		FormatTime(sBuffer, sizeof(sBuffer), "%m/%d/%Y");
 		ReplaceString(sText, size, "{DATE}", sBuffer, false);
 	}
 
-	if (StrContains(sText, "{CURRENTMAP}") != -1) {
+	if (StrContains(sText, "{CURRENTMAP}", false) != -1) {
 		GetCurrentMap(sBuffer, sizeof(sBuffer));
-		ReplaceString(sText, size, "{CURRENTMAP}", sBuffer);
+		ReplaceString(sText, size, "{CURRENTMAP}", sBuffer, false);
 	}
 
-	if (StrContains(sText, "{TIME}")       != -1) {
+	if (StrContains(sText, "{TIME}", false)       != -1) {
 		FormatTime(sBuffer, sizeof(sBuffer), "%I:%M:%S%p");
-		ReplaceString(sText, size, "{TIME}",       sBuffer);
+		ReplaceString(sText, size, "{TIME}",       sBuffer, false);
 	}
 
-	if (StrContains(sText, "{TIME24}")     != -1) {
+	if (StrContains(sText, "{TIME24}", false)     != -1) {
 		FormatTime(sBuffer, sizeof(sBuffer), "%H:%M:%S");
-		ReplaceString(sText, size, "{TIME24}",     sBuffer);
+		ReplaceString(sText, size, "{TIME24}",     sBuffer, false);
 	}
 
-	if (StrContains(sText, "{TIMELEFT}")   != -1) {
+	if (StrContains(sText, "{TIMELEFT}", false)   != -1) {
 		new iMins, iSecs, iTimeLeft;
 
 		if (GetMapTimeLeft(iTimeLeft) && iTimeLeft > 0) {
@@ -49,12 +49,17 @@ public Action:Ads_OnSend(String:sText[], size) {
 		}
 
 		Format(sBuffer, sizeof(sBuffer), "%d:%02d", iMins, iSecs);
-		ReplaceString(sText, size, "{TIMELEFT}",   sBuffer);
+		ReplaceString(sText, size, "{TIMELEFT}",   sBuffer, false);
 	}
 
 	if (StrContains(sText, "\\n")          != -1) {
 		Format(sBuffer, sizeof(sBuffer), "%c", 13);
 		ReplaceString(sText, size, "\\n",          sBuffer);
+	}
+
+	if (StrContains(sText, "{BR}", false)          != -1) {
+		Format(sBuffer, sizeof(sBuffer), "%c", 13);
+		ReplaceString(sText, size, "{BR}",          sBuffer, false);
 	}
 
 	return Plugin_Changed;
