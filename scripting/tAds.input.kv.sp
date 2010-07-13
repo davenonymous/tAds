@@ -8,7 +8,7 @@
 public Plugin:myinfo = {
 	name        = "tAds, Input, KV",
 	author      = "Thrawn, Tsunami",
-	description = "Display advertisements, with modular replacements",
+	description = "Advertisement source: keyvalues",
 	version     = PL_VERSION,
 	url         = "http://aaa.wallbash.com"
 };
@@ -23,10 +23,10 @@ new bool:g_bEnabled;
 
 public OnPluginStart() {
 	CreateConVar("sm_tads_kv_version", PL_VERSION, "Import advertisements from a KeyValues file", FCVAR_PLUGIN|FCVAR_SPONLY|FCVAR_REPLICATED|FCVAR_NOTIFY);
-	g_hCvarEnable        = CreateConVar("sm_tads_kv_enabled",  "1",                  "Enable/disable displaying advertisements.", FCVAR_PLUGIN, true, 0.0, true, 1.0);
-	g_hCvarFile           = CreateConVar("sm_tads_kv_file",     "advertisements.txt", "File to read the advertisements from.");
+	g_hCvarEnable = CreateConVar("sm_tads_kv_enabled", "1", "Enable/disable displaying advertisements.", FCVAR_PLUGIN, true, 0.0, true, 1.0);
+	g_hCvarFile = CreateConVar("sm_tads_kv_file", "advertisements.txt", "File to read the advertisements from.");
 
-	RegAdminCmd("sm_tads_kv_reload", Command_ReloadAds, ADMFLAG_BAN);
+	RegAdminCmd("sm_tads_kv_reload", Command_ReloadAds, ADMFLAG_BAN, " - reloads the ads");
 }
 
 public OnConfigsExecuted() {
