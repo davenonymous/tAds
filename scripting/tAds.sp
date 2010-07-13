@@ -6,7 +6,7 @@
 
 #define PL_VERSION    "0.0.1"
 
-#define MAX_ADS 16
+#define MAX_ADS 64
 
 public Plugin:myinfo = {
 	name        = "tAds",
@@ -139,6 +139,14 @@ public Native_GetAdText(Handle:hPlugin, iNumParams)
 //native Ads_RegisterAd(Float:interval, String:types[], const String:flags[], const String:text[]);
 public Native_RegisterAd(Handle:hPlugin, iNumParams)
 {
+	new String:sText[MSG_SIZE];
+	GetNativeString(4, sText, sizeof(sText)+1);
+
+	if(g_iCount == MAX_ADS) {
+		LogMessage("Could not register ad, too many ads already: %s", sText);
+		return;
+	}
+
 	new Float:fInterval = GetNativeCell(1);
 
 	if(fInterval == 0.0) {
@@ -151,9 +159,6 @@ public Native_RegisterAd(Handle:hPlugin, iNumParams)
 	new String:sFlags[16];
 	GetNativeString(3, sFlags, sizeof(sFlags)+1);
 
-	new String:sText[MSG_SIZE];
-	GetNativeString(4, sText, sizeof(sText)+1);
-
 	new String:sTrigger[MSG_SIZE];
 	GetNativeString(5, sTrigger, sizeof(sTrigger)+1);
 
@@ -162,7 +167,6 @@ public Native_RegisterAd(Handle:hPlugin, iNumParams)
 
 	new String:sFilter[MSG_SIZE];
 	GetNativeString(7, sFilter, sizeof(sFilter)+1);
-
 
 	//Pack in one piece, create timer
 	g_hAds[g_iCount][id] = g_iCount;
